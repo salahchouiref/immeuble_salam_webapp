@@ -1,0 +1,22 @@
+{
+  "name": "elsalam-finance-worker",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "db:init": "wrangler d1 execute elsalam-db --local --file=./migrations/0001_init.sql",
+    "db:security": "wrangler d1 execute elsalam-db --local --file=./migrations/0003_security.sql",
+    "db:seed": "wrangler d1 execute elsalam-db --local --file=./migrations/0002_seed.sql",
+    "db:setup": "wrangler d1 execute elsalam-db --local --file=./migrations/0001_init.sql && wrangler d1 execute elsalam-db --local --file=./migrations/0003_security.sql && wrangler d1 execute elsalam-db --local --file=./migrations/0002_seed.sql",
+    "db:setup:remote": "wrangler d1 execute elsalam-db --remote --file=./migrations/0001_init.sql && wrangler d1 execute elsalam-db --remote --file=./migrations/0003_security.sql && wrangler d1 execute elsalam-db --remote --file=./migrations/0002_seed.sql"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^4.20240806.0",
+    "typescript": "^5.5.3",
+    "wrangler": "^3.69.0"
+  },
+  "dependencies": {
+    "hono": "^4.5.0"
+  }
+}
