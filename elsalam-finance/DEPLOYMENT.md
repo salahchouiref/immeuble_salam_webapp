@@ -1,227 +1,141 @@
 # 🚀 Deployment Guide — Elsalam Finance
 
-## Prerequisites
+**Elsalam Finance is a full-stack app**: a Cloudflare **Worker** (Hono + D1) that serves both the API **and** the built React frontend as static assets (Workers + Static Assets). One project, one domain, same-origin API.
 
-1. **Cloudflare Account** (free tier is sufficient)
-2. **Node.js 18+** installed
-3. **npm** installed
+## Architecture
+
+```
+https://elsalam-finance-worker.<your-subdomain>.workers.dev/
+├── /api/*            → Hono API (auth, payments, expenses, reports, settings…)
+├── /                 → built React SPA (assets served from ../frontend/dist)
+└── /payments, …      → SPA fallback → index.html (client-side routing)
+```
 
 ---
 
-## Step 1: Install Wrangler CLI
+## Prerequisites
 
-```bash
-npm install -g wrangler
-```
+1. **Cloudflare Account** (free tier is enough)
+2. **Node.js 18+** and **npm**
+3. **Git** and a GitHub repo containing this project (already configured)
 
-## Step 2: Login to Cloudflare
+---
 
-```bash
-wrangler login
-```
+## Option A: Deploy via GitHub (auto-deploys on push) — RECOMMENDED
 
-## Step 3: Create D1 Database
+### A1. Create the D1 database
 
 ```bash
 cd worker
-
-# Create the database
-wrangler d1 create elsalam-db
+npx wrangler login
+npx wrangler d1 create elsalam-db
 ```
 
-This will output something like:
-```
-✅ Successfully created DB 'elsalam-db'
-database_id = "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
-```
-
-Copy the `database_id` and update `wrangler.toml`:
+Copy the returned `database_id` into `worker/wrangler.toml`:
 
 ```toml
 [[d1_databases]]
 binding = "DB"
 database_name = "elsalam-db"
-database_id = "YOUR_ACTUAL_DATABASE_ID"
+database_id = "REAL_DATABASE_ID"   # ← replace the placeholder
 ```
 
-## Step 4: Apply Migrations
-
-```bash
-# Local database (for testing)
-npm run db:init
-npm run db:seed
-
-# Remote/production database
-npm run db:init:remote
-
-# Seed production (after running setup)
-# Do NOT seed production with demo data
-```
-
-## Step 5: Deploy Worker (Backend)
+### A2. Add migrations remotely (one-time)
 
 ```bash
 cd worker
-
-# Set JWT secret
-wrangler secret put JWT_SECRET
-# Enter a strong random string when prompted
-
-# Deploy
-npm run deploy
+npm run db:setup:remote
 ```
 
-The worker will be available at:
-```
-https://elsalam-finance-worker.YOUR_SUBDOMAIN.workers.dev
-```
+This runs `0001_init.sql`, `0003_security.sql`, and `0002_seed.sql` (categories) on the remote D1.
 
-## Step 6: Build & Deploy Frontend
+### A3. Connect GitHub in the Cloudflare dashboard
 
-### Option A: Cloudflare Pages
+1. **Workers & Pages → Create → Worker → Deploy with GitHub**, select your repo `immeuble_salam_webapp`.
+2. Build settings:
+   - **Root directory**: `elsalam-finance/worker`
+   - **Build command**: `npm run build`
+3. Choose the **production** environment. Keep the worker name `elsalam-finance-worker`.
+
+Each push to `main` will build the frontend and deploy the Worker + assets.
+
+### A4. Set the JWT secret
+
+1. Open the deployed Worker → **Settings → Variables and Secrets**.
+2. Add a **Secret** `JWT_SECRET` with a long random string (e.g. `openssl rand -hex 32`).
+   This overrides the placeholder in `wrangler.toml`.
+
+### A5. Create the admin account (one-time)
 
 ```bash
-cd frontend
-
-# Build
-npm run build
-
-# Deploy
-npx wrangler pages deploy dist --project-name=elsalam-finance
-```
-
-Frontend will be available at:
-```
-https://elsalam-finance.pages.dev
-```
-
-### Option B: Custom Domain
-
-After deploying to Cloudflare Pages:
-1. Go to Cloudflare Dashboard → Pages
-2. Select your project
-3. Go to Custom Domains
-4. Add your domain
-
-## Step 7: Configure API URL
-
-Update the frontend to point to your worker URL.
-
-In `frontend/src/services/api.ts`, the API_BASE is set to `/api`.
-
-For production with separate domains, update to your worker URL:
-
-```typescript
-const API_BASE = 'https://elsalam-finance-worker.YOUR_SUBDOMAIN.workers.dev/api';
-```
-
-Or configure Cloudflare Pages to proxy `/api` to your worker.
-
-## Step 8: Create Initial Admin
-
-After deployment, create the admin user:
-
-```bash
-curl -X POST https://YOUR_WORKER_URL/api/auth/setup \
+curl -X POST https://elsalam-finance-worker.<your-subdomain>.workers.dev/api/auth/setup \
   -H "Content-Type: application/json" \
   -d '{"email":"admin@elsalam.com","password":"YOUR_SECURE_PASSWORD","name":"Admin"}'
 ```
 
-**IMPORTANT**: The setup endpoint only works once. After creating the admin, it will return an error if called again.
+The setup endpoint is idempotent: if the admin already exists it returns `200 "Comptes déjà configurés"` instead of overwriting data.
 
-## Step 9: Test
-
-1. Open your frontend URL
-2. Login with admin credentials
-3. Verify dashboard loads
-4. Test adding a payment
-5. Test adding an expense
-6. Test resident access (read-only)
-7. Test language switching (French ↔ Arabic)
-8. Test on mobile
+Shared read-only habitant account (automatically created at setup): `habitant@elsalam.com` / `habitant`.
 
 ---
 
-## Production Checklist
+## Option B: Deploy from CLI (no auto-deploy)
 
-- [ ] D1 database created and migrated
-- [ ] JWT_SECRET set via `wrangler secret`
-- [ ] Worker deployed and accessible
-- [ ] Frontend deployed and accessible
-- [ ] Admin user created via /api/auth/setup
-- [ ] HTTPS working on both frontend and worker
-- [ ] Language switching works (FR ↔ AR)
-- [ ] RTL layout works correctly
-- [ ] Mobile responsive design works
-- [ ] Admin can add/edit/delete payments
-- [ ] Admin can add/edit/delete expenses
-- [ ] Residents are read-only
-- [ ] Dashboard calculations are correct
-- [ ] Monthly reports generate correctly
+```bash
+cd worker
+npx wrangler login
+npm run deploy        # builds the frontend, then deploys Worker + assets
+```
+
+For secrets: `npx wrangler secret put JWT_SECRET`.
+
+---
+
+## Local development
+
+Two servers (as before):
+
+```bash
+cd elsalam-finance
+npm run worker:dev     # API on http://localhost:8787
+npm run dev            # Vite dev server on http://localhost:5173 (proxies /api)
+```
+
+To test the production single-port setup locally:
+
+```bash
+cd worker && npm run build && npx wrangler dev
+# now http://localhost:8787 serves BOTH the frontend and the API
+```
+
+---
+
+## Database migrations after changes
+
+Add the new `.sql` file to `worker/migrations/`, then:
+
+```bash
+cd worker
+npx wrangler d1 execute elsalam-db --remote --file=./migrations/XXXX_new_migration.sql
+```
+
+---
+
+## Update flow
+
+- Change code → `git push origin main` → Cloudflare re-deploys automatically.
 
 ---
 
 ## Troubleshooting
 
-### CORS Errors
-
-If you see CORS errors, ensure the worker has the correct CORS configuration. Check `worker/src/index.ts` for the CORS middleware.
-
-### D1 Binding Errors
-
-Make sure `wrangler.toml` has the correct database_id and the binding name matches `DB`.
-
-### Authentication Issues
-
-If login fails after deployment:
-1. Check that users were created via /api/auth/setup
-2. Verify JWT_SECRET is set
-3. Check worker logs: `wrangler tail`
-
-### RTL Issues
-
-If RTL layout is not working:
-1. Ensure `document.documentElement.dir` is being set
-2. Check that Tailwind classes are using logical properties where needed
-3. Test with the language switcher
-
----
-
-## Updating
-
-### Frontend
-
-```bash
-cd frontend
-npm run build
-npx wrangler pages deploy dist --project-name=elsalam-finance
-```
-
-### Worker
-
-```bash
-cd worker
-npm run deploy
-```
-
-### Database Migrations
-
-```bash
-cd worker
-# Create new migration file in migrations/
-wrangler d1 execute elsalam-db --remote --file=./migrations/XXXX_new_migration.sql
-```
+- **`400` main_module errors / blank page**: the frontend build wasn’t included — make sure the git build command is `npm run build` with root `elsalam-finance/worker` (its `build` script already builds `../frontend`).
+- **Login fails / tokens rejected**: `JWT_SECRET` must be the same everywhere you deploy; set it as a secret in the Worker settings.
+- **`D1_ERROR` / unknown database id**: verify `wrangler.toml` has the real `database_id` and the migrations ran remotely.
+- **JSON `Not found` on `/`**: the ASSETS binding isn’t serving — confirm `[assets] directory = "../frontend/dist"` exists before `wrangler deploy` / build command.
 
 ---
 
 ## Costs
 
-This application is designed to run on **Cloudflare's free tier**:
-
-| Service | Free Tier Limit |
-|---------|----------------|
-| Cloudflare Pages | Unlimited bandwidth |
-| Cloudflare Workers | 100,000 requests/day |
-| Cloudflare D1 | 5 GB storage, 10M reads/day |
-
-For a building with 9 residents, this will always stay within free limits.
+Within Cloudflare’s free tier for a small building: Workers 100k req/day, D1 5 GB storage / 10M reads/day, unlimited bandwidth.

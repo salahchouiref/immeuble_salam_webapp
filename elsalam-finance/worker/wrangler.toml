@@ -10,5 +10,10 @@ binding = "DB"
 database_name = "elsalam-db"
 database_id = "YOUR_D1_DATABASE_ID"
 
+[assets]
+directory = "../frontend/dist"
+binding = "ASSETS"
+run_worker_first = true
+
 [env.production]
 vars = { JWT_SECRET = "change-me" }

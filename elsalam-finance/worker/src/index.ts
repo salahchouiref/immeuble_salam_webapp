@@ -38,6 +38,25 @@ app.get('/api/health', (c) => {
   return c.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
+// Serve the built frontend (Workers + Static Assets)
+// Non-API requests fall through here and are served from the ASSETS binding.
+app.all('*', async (c) => {
+  const url = new URL(c.req.url);
+
+  if (url.pathname.startsWith('/api/')) {
+    return c.json({ error: 'Not found' }, 404);
+  }
+
+  const res = await c.env.ASSETS.fetch(c.req.raw);
+
+  if (res.status === 404) {
+    // SPA fallback: client-side routes like /payments, /reports serve index.html
+    return c.env.ASSETS.fetch(new Request(new URL('/index.html', url), c.req.raw));
+  }
+
+  return res;
+});
+
 // 404
 app.notFound((c) => {
   return c.json({ error: 'Not found' }, 404);
