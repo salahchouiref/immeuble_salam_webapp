@@ -35,6 +35,7 @@ const ar = {
     recentExpenses: 'آخر المصاريف',
     paymentStatus: 'حالة الأداء',
     noData: 'لا توجد بيانات لهذا الشهر',
+    noResidents: 'لا توجد بيانات للعرض. ابدأ بإضافة الساكنين.',
   },
 
   // Payments
@@ -304,12 +305,6 @@ const ar = {
     october: 'أكتوبر',
     november: 'نونبر',
     december: 'دجنبر',
-  },
-
-  // Demo
-  demo: {
-    warning: 'بيانات تجريبية',
-    explanation: 'هذه بيانات وهمية لغرض العرض فقط.',
   },
 };
 

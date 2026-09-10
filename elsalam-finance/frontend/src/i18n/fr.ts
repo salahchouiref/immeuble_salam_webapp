@@ -35,6 +35,7 @@ const fr = {
     recentExpenses: 'Dernières dépenses',
     paymentStatus: 'Statut des paiements',
     noData: 'Aucune donnée pour ce mois',
+    noResidents: 'Aucune donnée à afficher. Commencez par ajouter des habitants.',
   },
 
   // Payments
@@ -304,12 +305,6 @@ const fr = {
     october: 'Octobre',
     november: 'Novembre',
     december: 'Décembre',
-  },
-
-  // Demo
-  demo: {
-    warning: 'DONNÉES DE DÉMO',
-    explanation: 'Ceci sont des données fictives à des fins de démonstration.',
   },
 };
 

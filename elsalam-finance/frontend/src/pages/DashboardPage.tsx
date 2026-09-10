@@ -43,6 +43,16 @@ export default function DashboardPage() {
     );
   }
 
+  if (data.totalResidents === 0 && data.totalPayments === 0 && data.totalExpenses === 0) {
+    return (
+      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-8 text-center">
+        <p className="text-4xl mb-3">📭</p>
+        <p className="text-gray-700 font-medium mb-1">{t.dashboard.title}</p>
+        <p className="text-sm text-gray-500">{t.dashboard.noResidents}</p>
+      </div>
+    );
+  }
+
   const statusColors = {
     paid: 'bg-green-100 text-green-800 border-green-200',
     partial: 'bg-orange-100 text-orange-800 border-orange-200',

@@ -104,16 +104,6 @@ export default function LoginPage() {
             </button>
           </form>
         </div>
-
-        {/* Demo info */}
-        <div className="mt-6 bg-white/60 rounded-xl p-4 text-center">
-          <p className="text-xs text-gray-500 font-medium mb-1">{t.demo.warning}</p>
-          <p className="text-xs text-gray-400">{t.demo.explanation}</p>
-          <div className="mt-2 text-xs text-gray-500 space-y-0.5">
-            <p>Admin: admin@elsalam.com</p>
-            <p>Habitant (partagé): habitant@elsalam.com</p>
-          </div>
-        </div>
       </div>
     </div>
   );
