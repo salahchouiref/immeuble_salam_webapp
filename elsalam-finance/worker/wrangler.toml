@@ -8,7 +8,7 @@ JWT_SECRET = "change-me-in-production"
 [[d1_databases]]
 binding = "DB"
 database_name = "elsalam-db"
-database_id = "YOUR_D1_DATABASE_ID"
+database_id = "c9d0f179-d572-43a9-be51-f78511a14362"
 
 [assets]
 directory = "../frontend/dist"
